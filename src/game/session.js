@@ -73,6 +73,9 @@ export class Session {
    * @returns {{note:object, grade:string, delta:number}|null} the judged note
    */
   press(lane, songTime) {
+    // Judge the EARLIEST unjudged note in this lane that is inside the window.
+    // Picking the closest instead lets a slightly late press steal the next
+    // note in the lane, which auto-misses the one the player was aiming for.
     let best = null;
     let bestDelta = Infinity;
 
@@ -80,10 +83,10 @@ export class Session {
       if (note.lane !== lane || note.judged) continue;
       const delta = songTime - note.time;
       if (delta < -MISS_WINDOW) break; // too far in the future, and sorted
-      const abs = Math.abs(delta);
-      if (abs <= MISS_WINDOW && abs < bestDelta) {
-        bestDelta = abs;
+      if (Math.abs(delta) <= MISS_WINDOW) {
+        bestDelta = Math.abs(delta);
         best = note;
+        break;
       }
     }
 

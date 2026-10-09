@@ -82,6 +82,8 @@ export class Game {
     if (this.state !== "paused") return;
     this.state = "playing";
     this.audio.resume();
+    // The countdown overlay is hidden while paused; force it to re-emit.
+    this._countShown = undefined;
     this.hooks.onResume?.();
   }
 
@@ -113,8 +115,10 @@ export class Game {
     this._updateCountdown(songTime);
     this._scheduleAudio(songTime);
 
-    // Notes whose window has closed are misses.
-    const missed = this.session.update(songTime);
+    // Notes whose window has closed are misses. Judge on the same
+    // offset-adjusted clock as key presses, or a positive offset lets the
+    // auto-miss fire before a late-but-valid press can claim the note.
+    const missed = this.session.update(songTime - this.offset);
     for (const note of missed) {
       this.effects.missFlash(note.lane);
       this.hooks.onJudge?.({ grade: "miss", note, lane: note.lane, label: GRADE_LABEL.miss });

@@ -19,6 +19,9 @@ const ROAD_CENTER = (ROAD_NEAR + ROAD_FAR) / 2;
 const TRAVEL = 44; // world units a gem covers over one approach window
 const GEM_Y = 0.52;
 const MAX_GEMS = 192;
+// Resting opacities; update() adds press/pulse feedback on top of these.
+const LANE_TINT_BASE = 0.42;
+const HIT_GLOW_BASE = 0.34;
 
 export class Highway {
   /** @param {import('./scene.js').View} view */
@@ -174,6 +177,11 @@ export class Highway {
 
     this.laneCount = chart.laneCount;
     this.palette = chart.palette;
+    // Palette entries are "#rrggbb" strings; the gem shader needs channels.
+    this._paletteRGB = chart.palette.map((hex) => {
+      const n = Number.parseInt(hex.slice(1), 16);
+      return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+    });
     this.laneSpan = chart.laneCount * LANE_WIDTH;
     this.notes = chart.notes;
     this.approach = chart.difficulty.approach;
@@ -216,7 +224,7 @@ export class Highway {
         color: new THREE.Color(this.palette[i]),
         map: tintMap,
         transparent: true,
-        opacity: 0.5,
+        opacity: LANE_TINT_BASE,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         fog: false,
@@ -273,7 +281,7 @@ export class Highway {
     const glowMat = new THREE.MeshBasicMaterial({
       map: radialTexture("rgba(233,196,106,0.55)", "rgba(233,196,106,0)"),
       transparent: true,
-      opacity: 0.34,
+      opacity: HIT_GLOW_BASE,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       fog: false,
@@ -389,10 +397,10 @@ export class Highway {
       m.compose(p, q, s);
       this.gems.setMatrixAt(count, m);
 
-      const c = this.palette[note.lane];
-      this._gemColors[count * 3 + 0] = ((c >> 16) & 255) / 255;
-      this._gemColors[count * 3 + 1] = ((c >> 8) & 255) / 255;
-      this._gemColors[count * 3 + 2] = (c & 255) / 255;
+      const rgb = this._paletteRGB[note.lane];
+      this._gemColors[count * 3 + 0] = rgb[0];
+      this._gemColors[count * 3 + 1] = rgb[1];
+      this._gemColors[count * 3 + 2] = rgb[2];
 
       // Fade in at the horizon so gems don't pop into existence.
       const fadeIn = Math.min(1, (approach - lead) / 0.35);
@@ -418,7 +426,7 @@ export class Highway {
       if (pulse > 0) this._pulse[i] = Math.max(0, pulse - dt * 3.4);
 
       const strip = this.laneStrips[i];
-      if (strip) strip.material.opacity = 0.26 + press * 0.4 + pulse * 0.45;
+      if (strip) strip.material.opacity = LANE_TINT_BASE + press * 0.4 + pulse * 0.45;
 
       const ring = this.rings[i];
       if (ring) {
@@ -435,7 +443,8 @@ export class Highway {
     }
 
     if (this.hitGlow) {
-      this.hitGlow.material.opacity = 0.42 + Math.sin(performance.now() * 0.0016) * 0.06;
+      this.hitGlow.material.opacity =
+        HIT_GLOW_BASE + Math.sin(performance.now() * 0.0016) * 0.05;
     }
   }
 
@@ -579,10 +588,16 @@ function radialTexture(inner, outer) {
 }
 
 function disposeTree(obj) {
+  // material.dispose() does not free its textures, so release maps explicitly;
+  // otherwise every song start leaks the ramp and glow textures on the GPU.
+  const disposeMaterial = (m) => {
+    m?.map?.dispose?.();
+    m?.dispose?.();
+  };
   obj.traverse?.((node) => {
     node.geometry?.dispose?.();
     const mat = node.material;
-    if (Array.isArray(mat)) mat.forEach((m) => m.dispose?.());
-    else mat?.dispose?.();
+    if (Array.isArray(mat)) mat.forEach(disposeMaterial);
+    else disposeMaterial(mat);
   });
 }

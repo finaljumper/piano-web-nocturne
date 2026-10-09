@@ -27,11 +27,12 @@ export function parseToken(token) {
   const m = TOKEN_RE.exec(token);
   if (!m) throw new Error(`Bad note token: "${token}"`);
 
-  // Rest branch
+  // Rest branch. The note alternative owns groups 1-6, so a rest's numeric
+  // duration, letter and dots land in groups 7, 8 and 9.
   if (m[0].toLowerCase().startsWith("r")) {
-    const numeric = m[6];
-    const letter = m[7];
-    const dots = m[8] ?? "";
+    const numeric = m[7];
+    const letter = m[8];
+    const dots = m[9] ?? "";
     return { midi: null, dur: duration(numeric, letter, dots, token) };
   }
 

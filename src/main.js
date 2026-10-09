@@ -86,7 +86,10 @@ const game = new Game({
     onJudge: (detail) => ui.judge(detail),
     onProgress: (session, songTime, chart) => ui.updateHUD(session, songTime, chart),
     onCountdown: (value) => ui.countdown(value),
-    onPause: () => ui.showOverlay("pause"),
+    onPause: () => {
+      ui.hideOverlay("count");
+      ui.showOverlay("pause");
+    },
     onResume: () => ui.hideOverlay("pause"),
     onStop: () => {
       ui.showHud(false);

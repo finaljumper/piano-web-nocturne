@@ -139,11 +139,46 @@ async function main() {
     const state = await page.evaluate(() => window.__nocturne.game.state);
     if (state !== "playing") throw new Error(`state is ${state}, expected playing`);
     if (!(await page.isVisible("#screenCount.is-active"))) throw new Error("countdown overlay not visible");
+    // Regression: the countdown overlay used to swallow clicks on the HUD.
+    const reachable = await page.evaluate(() => {
+      const btn = document.getElementById("btnPause");
+      const r = btn.getBoundingClientRect();
+      return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === btn;
+    });
+    if (!reachable) throw new Error("pause button is covered by the countdown overlay");
   });
 
   // Let a few notes fall before capturing the highway.
   await sleep(5200);
-  await check(page, "05-highway", async () => {});
+  await check(page, "05-highway", async () => {
+    // Regression: gems used to be colourless because palette strings were
+    // bit-shifted as if they were numbers.
+    const gems = await page.evaluate(() => {
+      const g = window.__nocturne.highway.gems;
+      const c = g.geometry.attributes.aColor.array;
+      let lit = 0;
+      for (let i = 0; i < g.count; i++) if (c[i * 3] + c[i * 3 + 1] + c[i * 3 + 2] > 0.3) lit++;
+      return { visible: g.count, coloured: lit };
+    });
+    console.log(`\u00b7 gems on screen: ${gems.visible}, coloured: ${gems.coloured}`);
+    if (gems.visible === 0) throw new Error("no gems on screen");
+    if (gems.coloured !== gems.visible) throw new Error("some gems have no colour");
+  });
+
+  // Regression: each song start used to leak four GPU textures.
+  {
+    const textures = () =>
+      page.evaluate(() => window.__nocturne.view.renderer.info.memory.textures);
+    const before = await textures();
+    for (let i = 0; i < 4; i++) {
+      await page.evaluate(() => window.__nocturne.game.restart());
+      await sleep(250);
+    }
+    const after = await textures();
+    console.log(`\u00b7 GPU textures across 4 restarts: ${before} -> ${after}`);
+    if (after > before + 1) problems.push(`texture leak: ${before} -> ${after} over 4 restarts`);
+    await sleep(4200); // let the restarted chart get past its countdown
+  }
 
   const lanes = await page.evaluate(() => window.__nocturne.game.chart.laneCount);
   console.log(`· lanes: ${lanes}`);

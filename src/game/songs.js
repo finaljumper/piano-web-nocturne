@@ -193,11 +193,10 @@ function moonlight() {
   const out = [];
   const third = 1 / 3;
   for (const chord of chords) {
+    // Every beat repeats the same rising triplet (low, middle, high), exactly
+    // as Beethoven writes it; rotating the order would lose the figure.
     for (let beat = 0; beat < 4; beat++) {
-      for (let i = 0; i < 3; i++) {
-        const note = chord[(beat + i) % 3];
-        out.push({ name: note, dur: third });
-      }
+      for (const note of chord) out.push({ name: note, dur: third });
     }
   }
   return out.map(({ name, dur }) => {

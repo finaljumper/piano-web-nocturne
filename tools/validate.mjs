@@ -8,6 +8,9 @@
 
 import { SONGS } from "../src/game/songs.js";
 import { buildChart, DIFFICULTIES, MISS_WINDOW } from "../src/game/chart.js";
+import { parseToken, parseNoteString } from "../src/game/notes.js";
+import { Session } from "../src/game/session.js";
+import { Game } from "../src/game/game.js";
 
 let failures = 0;
 let checks = 0;
@@ -24,6 +27,81 @@ const MIN_DURATION = 8;
 const MAX_DURATION = 95;
 
 console.log("validating songs and charts\n");
+
+/* --- regression: rest durations (every rest used to parse as 1 beat) ----- */
+for (const [token, beats] of [
+  ["Rw", 4], ["Rh", 2], ["Rq", 1], ["Re", 0.5], ["Rs", 0.25],
+  ["Rq.", 1.5], ["R:0.75", 0.75], ["E5h", 2], ["D#5e.", 0.75],
+]) {
+  let got;
+  try {
+    got = parseToken(token).dur;
+  } catch (err) {
+    got = `threw ${err.message}`;
+  }
+  check(got === beats, `token ${token}: duration ${got}, expected ${beats}`);
+}
+
+/* --- regression: hands of one piece must be the same length in beats ----- */
+const beatsOf = (track) => {
+  const raw = typeof track.notes === "function" ? track.notes() : track.notes;
+  const items = typeof raw === "string" ? parseNoteString(raw) : raw;
+  return items.reduce((sum, n) => sum + n.dur, 0);
+};
+for (const song of SONGS) {
+  if (song.tracks.length < 2) continue;
+  const lengths = song.tracks.map(beatsOf);
+  const spread = Math.max(...lengths) - Math.min(...lengths);
+  check(
+    spread < 1e-6,
+    `${song.title}: hands drift apart (${lengths.map((l) => l.toFixed(2)).join(" vs ")} beats)`,
+  );
+}
+
+/* --- regression: a late press must not steal the next note in the lane --- */
+{
+  const notes = [
+    { time: 1, lane: 0, judged: null },
+    { time: 1.24, lane: 0, judged: null },
+  ];
+  const s = new Session({ notes });
+  s.press(0, 1.13);
+  s.press(0, 1.32);
+  for (let t = 0; t < 2; t += 1 / 60) s.update(t);
+  check(
+    notes[0].judged !== "miss" && notes[1].judged !== "miss",
+    `same-lane steal: got ${notes.map((n) => n.judged).join(", ")}`,
+  );
+}
+
+/* --- regression: the timing offset must also move the auto-miss clock ---- */
+{
+  const clock = { t: 0 };
+  const stub = () => {};
+  const game = new Game({
+    audio: {
+      now: () => clock.t,
+      piano: { note: stub, accent: stub },
+      panic: stub,
+      suspend: stub,
+      resume: stub,
+    },
+    view: {},
+    highway: { build: stub, pressLane: stub, punchLane: stub },
+    effects: { clear: stub, missFlash: stub, burst: stub },
+  });
+  const song = { bpm: 60, tracks: [{ hand: "R", notes: "Rw C5q Rw" }] };
+  game.play(song, "hard");
+  game.offset = 0.15; // player is consistently 150 ms late
+  const note = game.chart.notes[0];
+  const pressAt = game._audioStart + note.time + 0.15 + 0.1; // and 100 ms later still
+  for (clock.t = 0; clock.t < pressAt; clock.t += 1 / 60) game.update(1 / 60);
+  game._press(note.lane);
+  check(
+    note.judged === "great",
+    `offset 150ms, press 250ms late: judged ${note.judged}, expected great`,
+  );
+}
 
 for (const song of SONGS) {
   check(typeof song.id === "string" && song.id.length > 0, `${song.title}: missing id`);
