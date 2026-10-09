@@ -1,5 +1,6 @@
 import { SONGS } from "../game/songs.js";
 import { buildChart, DIFFICULTIES } from "../game/chart.js";
+import { KEY_LAYOUTS } from "../game/input.js";
 
 const SETTINGS_KEY = "nocturne.settings.v1";
 const BEST_KEY = "nocturne.best.v1";
@@ -89,7 +90,10 @@ export class UI {
     const $ = (id) => document.getElementById(id);
 
     $("btnPlay").addEventListener("click", () => this.hooks.onPlay?.());
-    $("btnHowTo").addEventListener("click", () => this.showOverlay("how"));
+    $("btnHowTo").addEventListener("click", () => {
+      this.renderHowTo();
+      this.showOverlay("how");
+    });
     $("btnHowClose").addEventListener("click", () => this.hideOverlay("how"));
     $("btnSettings").addEventListener("click", () => this.showOverlay("settings"));
     $("btnSettingsClose").addEventListener("click", () => this.hideOverlay("settings"));
@@ -202,6 +206,29 @@ export class UI {
       p.classList.toggle("is-active", p.dataset.diff === diff);
     });
     this.renderSongGrid();
+    this.renderHowTo();
+  }
+
+  /** Show the key layout that matches the selected difficulty's lane count. */
+  renderHowTo() {
+    const lanes = DIFFICULTIES[this.difficulty].lanes;
+    const keys = KEY_LAYOUTS[lanes] ?? KEY_LAYOUTS[8];
+    const split = keys.length / 2;
+
+    const fill = (id, slice) => {
+      const el = document.getElementById(id);
+      el.innerHTML = "";
+      for (const key of slice) {
+        const kbd = document.createElement("kbd");
+        kbd.textContent = key;
+        el.appendChild(kbd);
+      }
+    };
+    fill("howKeysLeft", keys.slice(0, split));
+    fill("howKeysRight", keys.slice(split));
+
+    document.getElementById("howKeysNote").textContent =
+      `${lanes} lanes on ${DIFFICULTIES[this.difficulty].label} — the number keys 1–${lanes} also work.`;
   }
 
   renderSongGrid() {
