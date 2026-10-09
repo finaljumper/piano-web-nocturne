@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+# Least privilege by default; each job opts into what it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Let configure-pages enable Pages if it is not already enabled.
+      pages: write
+    steps:
+      # v4
+      - uses:
+          actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          # Do not leave the token in .git/config; it would be packed
+          # into the uploaded Pages artifact.
+          persist-credentials: false
+      # v4
+      - uses:
+          actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate charts
+        run: npm run validate
+
+      - name: Build
+        run: npm run build
+
+      # v5
+      - uses:
+          actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+        with:
+          enablement: true
+
+      # v3
+      - uses:
+          actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # v4
+      - id: deployment
+        uses:
+          actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
