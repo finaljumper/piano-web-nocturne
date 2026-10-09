@@ -129,7 +129,7 @@ async function main() {
   await page.click('.pill[data-diff="hard"]');
   await sleep(250);
   await check(page, "03-song-select-hard", async () => {});
-  await page.click('.pill[data-diff="normal"]');
+  await page.click('.pill[data-diff="medium"]');
   await sleep(200);
 
   // --- start a performance -------------------------------------------------

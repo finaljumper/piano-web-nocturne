@@ -11,7 +11,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 
 const out = process.argv[2] ?? "tools/shots/labels.png";
 const songId = process.argv[3] ?? "fur-elise";
-const difficulty = process.argv[4] ?? "normal";
+const difficulty = process.argv[4] ?? "medium";
 const url = "http://localhost:4201/";
 const root = new URL("..", import.meta.url).pathname;
 

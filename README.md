@@ -38,7 +38,7 @@ what you see and what you hear cannot drift apart.
 
 - Press the key for a lane as its gem crosses the hit line.
 - `Esc` or `P` pauses. On touch devices, tap the pads along the bottom.
-- Number keys `1`–`8` are accepted as alternates for the active lanes.
+- Number keys `1`–`6` are accepted as alternates for the active lanes.
 
 Timing grades: **Perfect** ±70 ms, **Great** ±130 ms, **Good** ±210 ms, beyond
 that the note is missed and the combo resets. Score scales with the grade and a
@@ -50,8 +50,8 @@ at the end.
 | | Lanes | Note spacing | Scroll | Tempo |
 | --- | --- | --- | --- | --- |
 | Easy | 4 | ≥ 460 ms | slower | 0.8× |
-| Normal | 6 | ≥ 290 ms | medium | 1× |
-| Hard | 8 | ≥ 100 ms | fast | 1× |
+| Medium | 6 | ≥ 290 ms | medium | 1× |
+| Hard | 6 | ≥ 220 ms | fast | 1.15× |
 
 Thinning is applied evenly across note onsets rather than by deleting a hand, so
 the tune stays recognisable at every difficulty. Lane assignment ranks the
@@ -61,21 +61,32 @@ melody.
 
 ## Repertoire
 
-Seven public-domain pieces, arranged for the game:
+Seventeen public-domain pieces, played full length. Note data is converted
+from public-domain MIDI sources by `tools/import-midi.mjs` (sources fetched by
+`tools/fetch-midi.mjs`):
 
 | Piece | Composer | Era |
 | --- | --- | --- |
 | Für Elise | Beethoven | Classical |
 | Moonlight Sonata (I) | Beethoven | Classical |
 | Ode to Joy | Beethoven | Classical |
+| Pathétique: Adagio cantabile | Beethoven | Classical |
+| Rondo alla Turca | Mozart | Classical |
+| Lacrimosa (Requiem) | Mozart | Classical |
+| Nocturne Op. 9 No. 2 | Chopin | Romantic |
+| Prelude Op. 28 No. 4 | Chopin | Romantic |
+| Fantaisie-Impromptu Op. 66 | Chopin | Romantic |
+| Prelude Op. 3 No. 2 | Rachmaninoff | Romantic |
+| Vocalise Op. 34 No. 14 | Rachmaninoff | Romantic |
+| Swan Lake Theme | Tchaikovsky | Romantic |
+| Dance of the Sugar Plum Fairy | Tchaikovsky | Romantic |
 | Minuet in G | Petzold (attrib. Bach) | Baroque |
 | Canon in D | Pachelbel | Baroque |
 | Prelude in C | J.S. Bach | Baroque |
 | Gymnopédie No. 1 | Satie | Neo-classical |
 
-These are playable arrangements, not urtext editions: melodies and harmony are
-preserved, inner voices are thinned where a second simultaneous line would be
-unreadable on a lane highway.
+The conversions stay faithful to the source; per-difficulty onset thinning in
+`chart.js` is what keeps the texture readable on a lane highway.
 
 ## Architecture
 

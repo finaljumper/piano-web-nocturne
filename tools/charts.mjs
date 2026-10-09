@@ -3,7 +3,7 @@ import { buildChart, DIFFICULTIES } from "../src/game/chart.js";
 
 for (const song of SONGS) {
   console.log(`\n${song.title} — ${song.composer} (${song.bpm} bpm)`);
-  for (const d of ["easy", "normal", "hard"]) {
+  for (const d of ["easy", "medium", "hard"]) {
     const c = buildChart(song, d);
     const lanes = new Array(c.laneCount).fill(0);
     for (const n of c.notes) lanes[n.lane]++;

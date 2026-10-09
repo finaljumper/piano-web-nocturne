@@ -8,7 +8,6 @@
 export const KEY_LAYOUTS = {
   4: ["D", "F", "J", "K"],
   6: ["S", "D", "F", "J", "K", "L"],
-  8: ["A", "S", "D", "F", "J", "K", "L", ";"],
 };
 
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8"];
@@ -43,7 +42,7 @@ export class Input {
   setLanes(n, palette) {
     this.laneCount = n;
     this.palette = palette ?? null;
-    this.labels = KEY_LAYOUTS[n] ?? KEY_LAYOUTS[8];
+    this.labels = KEY_LAYOUTS[n] ?? KEY_LAYOUTS[6];
     this._lookup.clear();
     this.labels.forEach((label, lane) => {
       this._lookup.set(label.toUpperCase(), lane);

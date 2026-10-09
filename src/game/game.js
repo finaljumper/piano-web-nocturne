@@ -43,7 +43,7 @@ export class Game {
 
   /* ---------------------------------------------------------------------- */
 
-  /** @param {object} song @param {'easy'|'normal'|'hard'} difficulty */
+  /** @param {object} song @param {'easy'|'medium'|'hard'} difficulty */
   play(song, difficulty) {
     this.stop(true);
 

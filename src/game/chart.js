@@ -11,25 +11,17 @@ import { parseNoteString } from "./notes.js";
 const PALETTES = {
   4: ["#4fb3d9", "#9ed36a", "#e9c46a", "#e97a9b"],
   6: ["#4fb3d9", "#5fd0b0", "#9ed36a", "#e9c46a", "#e97a9b", "#b07fe0"],
-  8: [
-    "#4fb3d9",
-    "#5fd0b0",
-    "#9ed36a",
-    "#e9c46a",
-    "#eaa94f",
-    "#e97a9b",
-    "#b07fe0",
-    "#7f8ce0",
-  ],
 };
 
 export const DIFFICULTIES = {
   // `minGap` is the shortest allowed gap between note onsets. Thinning the
   // texture evenly (rather than deleting one hand) keeps the tune intact at
-  // every difficulty while giving a real density gradient.
+  // every difficulty while giving a real density gradient. Easy also breathes:
+  // 0.8x tempo and 4 lanes; Hard speeds up to 1.15x with the same 6 lanes as
+  // Medium, but a tighter minGap lets more of the fast line through.
   easy: { id: "easy", label: "Easy", lanes: 4, minGap: 0.46, tempoScale: 0.8, approach: 2.6 },
-  normal: { id: "normal", label: "Normal", lanes: 6, minGap: 0.29, tempoScale: 1, approach: 2.0 },
-  hard: { id: "hard", label: "Hard", lanes: 8, minGap: 0.1, tempoScale: 1, approach: 1.55 },
+  medium: { id: "medium", label: "Medium", lanes: 6, minGap: 0.29, tempoScale: 1, approach: 2.0 },
+  hard: { id: "hard", label: "Hard", lanes: 6, minGap: 0.22, tempoScale: 1.15, approach: 1.7 },
 };
 
 /** Hit windows, in seconds either side of the note. */
@@ -61,10 +53,10 @@ function expandTrack(track) {
 
 /**
  * @param {object} song  entry from SONGS
- * @param {'easy'|'normal'|'hard'} difficulty
+ * @param {'easy'|'medium'|'hard'} difficulty
  */
-export function buildChart(song, difficulty = "normal") {
-  const cfg = DIFFICULTIES[difficulty] ?? DIFFICULTIES.normal;
+export function buildChart(song, difficulty = "medium") {
+  const cfg = DIFFICULTIES[difficulty] ?? DIFFICULTIES.medium;
   // Easy also breathes: a slightly slower tempo gives newer players room,
   // which thinning alone cannot.
   const spb = 60 / (song.bpm * (cfg.tempoScale ?? 1));
@@ -144,7 +136,7 @@ export function buildChart(song, difficulty = "normal") {
     song,
     difficulty: cfg,
     laneCount,
-    palette: PALETTES[laneCount] ?? PALETTES[8],
+    palette: PALETTES[laneCount] ?? PALETTES[6],
     notes: kept,
     duration: endTime,
     stats: chartStats(kept),

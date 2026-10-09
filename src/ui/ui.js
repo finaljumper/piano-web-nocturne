@@ -22,7 +22,7 @@ export class UI {
     this.hooks = hooks;
     this.settings = loadJSON(SETTINGS_KEY, { ...DEFAULT_SETTINGS });
     this.best = loadJSON(BEST_KEY, {});
-    this.difficulty = "normal";
+    this.difficulty = "medium";
 
     this._displayScore = 0;
     this._comboVisible = false;
@@ -212,7 +212,7 @@ export class UI {
   /** Show the key layout that matches the selected difficulty's lane count. */
   renderHowTo() {
     const lanes = DIFFICULTIES[this.difficulty].lanes;
-    const keys = KEY_LAYOUTS[lanes] ?? KEY_LAYOUTS[8];
+    const keys = KEY_LAYOUTS[lanes] ?? KEY_LAYOUTS[6];
     const split = keys.length / 2;
 
     const fill = (id, slice) => {
