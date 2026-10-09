@@ -179,8 +179,8 @@ for (const song of SONGS) {
     const densityRank = { easy: 0, medium: 1, hard: 2 };
     check(
       densityRank[difficulty] === 2 ||
-        chart.stats.nps <= buildChart(song, "hard").stats.nps + 1e-6,
-      `${tag}: denser than hard`,
+        chart.notes.length <= buildChart(song, "hard").notes.length,
+      `${tag}: more notes than hard`,
     );
 
     // Lane usage should not be absurdly concentrated.

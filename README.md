@@ -47,11 +47,14 @@ at the end.
 
 ### Difficulty
 
-| | Lanes | Note spacing | Scroll | Tempo |
-| --- | --- | --- | --- | --- |
-| Easy | 4 | ≥ 460 ms | slower | 0.8× |
-| Medium | 6 | ≥ 290 ms | medium | 1× |
-| Hard | 6 | ≥ 220 ms | fast | 1.15× |
+The music itself plays at the same tempo on every difficulty — only the
+scroll speed and note density change.
+
+| | Lanes | Note spacing | Gem travel |
+| --- | --- | --- | --- |
+| Easy | 4 | ≥ 460 ms | 3.2 s (gentle) |
+| Medium | 6 | ≥ 290 ms | 2.2 s |
+| Hard | 6 | ≥ 220 ms | 1.6 s (fast) |
 
 Thinning is applied evenly across note onsets rather than by deleting a hand, so
 the tune stays recognisable at every difficulty. Lane assignment ranks the

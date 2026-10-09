@@ -16,12 +16,12 @@ const PALETTES = {
 export const DIFFICULTIES = {
   // `minGap` is the shortest allowed gap between note onsets. Thinning the
   // texture evenly (rather than deleting one hand) keeps the tune intact at
-  // every difficulty while giving a real density gradient. Easy also breathes:
-  // 0.8x tempo and 4 lanes; Hard speeds up to 1.15x with the same 6 lanes as
-  // Medium, but a tighter minGap lets more of the fast line through.
-  easy: { id: "easy", label: "Easy", lanes: 4, minGap: 0.46, tempoScale: 0.8, approach: 2.6 },
-  medium: { id: "medium", label: "Medium", lanes: 6, minGap: 0.29, tempoScale: 1, approach: 2.0 },
-  hard: { id: "hard", label: "Hard", lanes: 6, minGap: 0.22, tempoScale: 1.15, approach: 1.7 },
+  // every difficulty while giving a real density gradient. The music itself
+  // plays at the same tempo on every difficulty — `approach` is how long a gem
+  // takes to travel the highway, so harder charts scroll in faster.
+  easy: { id: "easy", label: "Easy", lanes: 4, minGap: 0.46, approach: 3.2 },
+  medium: { id: "medium", label: "Medium", lanes: 6, minGap: 0.29, approach: 2.2 },
+  hard: { id: "hard", label: "Hard", lanes: 6, minGap: 0.22, approach: 1.6 },
 };
 
 /** Hit windows, in seconds either side of the note. */
@@ -59,7 +59,9 @@ export function buildChart(song, difficulty = "medium") {
   const cfg = DIFFICULTIES[difficulty] ?? DIFFICULTIES.medium;
   // Easy also breathes: a slightly slower tempo gives newer players room,
   // which thinning alone cannot.
-  const spb = 60 / (song.bpm * (cfg.tempoScale ?? 1));
+  // The music runs at the song's own tempo on every difficulty; only the gem
+  // travel time (`approach`) changes how fast the highway scrolls.
+  const spb = 60 / song.bpm;
 
   // --- 1. expand all tracks -------------------------------------------------
   const all = [];
