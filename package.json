@@ -1,0 +1,23 @@
+{
+  "name": "nocturne",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Nocturne — a piano rhythm game for classical and neo-classical music.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "validate": "node tools/validate.mjs",
+    "verify": "vite build && node tools/verify.mjs",
+    "audio:level": "vite build && node tools/audio-level.mjs"
+  },
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.0",
+    "pngjs": "^7.0.0",
+    "vite": "^8.3.4"
+  }
+}
