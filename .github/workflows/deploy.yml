@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 # Least privilege by default; each job opts into what it needs.
@@ -18,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Let configure-pages enable Pages if it is not already enabled.
-      pages: write
     steps:
       # v4
       - uses:
@@ -28,6 +26,7 @@ jobs:
           # Do not leave the token in .git/config; it would be packed
           # into the uploaded Pages artifact.
           persist-credentials: false
+
       # v4
       - uses:
           actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -47,8 +46,6 @@ jobs:
       # v5
       - uses:
           actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
-        with:
-          enablement: true
 
       # v3
       - uses:
