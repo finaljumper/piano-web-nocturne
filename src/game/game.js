@@ -140,7 +140,7 @@ export class Game {
   }
 
   _scheduleAudio(songTime) {
-    const notes = this.chart.notes;
+    const notes = this.chart.performance;
     const horizon = songTime + LOOKAHEAD;
     while (this._schedIndex < notes.length && notes[this._schedIndex].time <= horizon) {
       const note = notes[this._schedIndex];
@@ -148,8 +148,8 @@ export class Game {
       if (when > this.audio.now()) {
         // The sustained "performance" layer: the piece always sounds, so the
         // player is practising against a real pianist rather than silence.
-        this.audio.piano.note(note.midi, when, note.dur + 0.35, {
-          velocity: 0.5,
+        this.audio.piano.note(note.midi, when, note.sustain, {
+          velocity: note.velocity,
           bright: 0.42,
         });
       }
@@ -171,8 +171,7 @@ export class Game {
     this.effects.burst(lane, detail.grade, color);
     this.highway.punchLane(lane, detail.grade === "perfect" ? 1 : 0.6);
 
-    // Reward layer: a bright restrike of the note the player just earned.
-    this.audio.piano.accent(detail.note.midi, this.audio.now() + 0.004);
+    // Reward hits visually; restriking the piano would add notes to the score.
 
     this.hooks.onJudge?.({
       grade: detail.grade,

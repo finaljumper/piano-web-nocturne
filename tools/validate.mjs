@@ -11,6 +11,10 @@ import { buildChart, DIFFICULTIES, MISS_WINDOW } from "../src/game/chart.js";
 import { parseToken, parseNoteString } from "../src/game/notes.js";
 import { Session } from "../src/game/session.js";
 import { Game } from "../src/game/game.js";
+import { readFileSync } from "node:fs";
+import MidiPkg from "@tonejs/midi";
+import { sustainedDuration } from "./midi-sustain.mjs";
+import "./audit-transcriptions.mjs";
 
 let failures = 0;
 let checks = 0;
@@ -27,6 +31,41 @@ const MIN_DURATION = 8;
 const MAX_DURATION = 420;
 
 console.log("validating songs and charts\n");
+
+/* --- score structure: these contracts come from the written notation ------ */
+{
+  const source = (id) => new MidiPkg.Midi(readFileSync(new URL(`./midi/${id}.mid`, import.meta.url)));
+  const canon = source("canon-in-d");
+  const parts = canon.tracks.filter((t) => t.notes.length);
+  check(parts.length === 4, "Canon: the three canon voices and ground bass are required");
+  check(JSON.stringify(parts.map((t) => t.notes[0].ticks / canon.header.ppq)) === "[8,16,24,0]",
+    "Canon: voices must enter two bars apart over the opening bass");
+  const bass = parts[3].notes;
+  // The source's \relative c bass starts on D3, not D2.
+  const ground = [50, 45, 47, 42, 43, 38, 43, 45];
+  check(bass.length === 225 && bass.slice(0, 224).every((n, i) =>
+    n.midi === ground[i % 8] && n.ticks === i * canon.header.ppq),
+    "Canon: the 28 complete ground-bass repetitions are missing or altered");
+  for (const [id, quarters] of [["minuet-in-g", 192], ["gymnopedie-1", 234], ["fur-elise", 187], ["rondo-alla-turca", 430.5]]) {
+    const midi = source(id);
+    const end = Math.max(...midi.tracks.flatMap((t) => t.notes).map((n) => n.ticks + n.durationTicks)) / midi.header.ppq;
+    check(end === quarters, `${id}: written repeats/alternative endings are incomplete`);
+  }
+}
+
+/* --- damper pedal changes audible holds, never written rhythm ------------- */
+{
+  const note = { time: 1, duration: 0.5 };
+  const pedal = [{ time: 0.9, value: 1 }, { time: 2.5, value: 0 }];
+  check(sustainedDuration(note, pedal) === 1.5, "pedal: key release cuts off a sustained harmony");
+  check(sustainedDuration(note, [{ time: 1.5, value: 0 }]) === 0.5, "pedal: release at key-up adds sustain");
+  check(sustainedDuration(note, [{ time: 1.6, value: 1 }, { time: 3, value: 0 }]) === 0.5, "pedal: late press revives a released note");
+  check(sustainedDuration(note, [{ time: 0, value: 1 }, { time: 1.3, value: 0 }]) === 0.5, "pedal: early release shortens a held key");
+  check(sustainedDuration(note, [{ time: 0, value: 1 }]) === 0.5, "pedal: missing release creates an indefinite hold");
+  const chart = buildChart({ bpm: 60, tracks: [{ notes: [{ midi: 60, time: 0, dur: 0.2, sustain: 3 }] }] }, "easy");
+  check(chart.performance[0].dur === 0.2 && chart.performance[0].sustain === 3 && chart.duration === 5.2,
+    "pedal: audible sustain changes notated duration or gets cut off by results");
+}
 
 /* --- regression: rest durations (every rest used to parse as 1 beat) ----- */
 for (const [token, beats] of [
@@ -53,6 +92,8 @@ const beatsOf = (track) => {
 };
 for (const song of SONGS) {
   if (song.tracks.length < 2) continue;
+  // Absolute MIDI tracks overlap and may finish at different times by design.
+  if (song.tracks.some((t) => t.notes.some?.((n) => n.time !== undefined))) continue;
   const lengths = song.tracks.map(beatsOf);
   const spread = Math.max(...lengths) - Math.min(...lengths);
   check(
@@ -106,7 +147,88 @@ for (const song of SONGS) {
   );
 }
 
+/* --- full audio scheduling must survive chart filtering and hits ---------- */
+for (const difficulty of Object.keys(DIFFICULTIES)) {
+  const calls = [];
+  const clock = { t: 0 };
+  const stub = () => {};
+  const game = new Game({
+    audio: {
+      now: () => clock.t,
+      piano: {
+        note: (midi, when, dur, options) => calls.push({ midi, when, dur, velocity: options.velocity }),
+        accent: () => calls.push("extra hit note"),
+      },
+      panic: stub, suspend: stub, resume: stub,
+    },
+    view: {},
+    highway: { build: stub, pressLane: stub, punchLane: stub },
+    effects: { clear: stub, missFlash: stub, burst: stub },
+  });
+  // Fast notes, an overlapping chord and a held final note. Easier charts
+  // intentionally omit some of these events; every one must still sound.
+  const song = { bpm: 120, tracks: [{ hand: "R", notes: [
+    { midi: 60, time: 0, dur: 0.1, velocity: 0.6 },
+    { midi: 64, time: 0, dur: 1.5, velocity: 0.4 },
+    { midi: 62, time: 0.1, dur: 0.1, velocity: 0.5 },
+    { midi: 65, time: 0.3, dur: 0.1, velocity: 0.7 },
+    { midi: 67, time: 0.5, dur: 3, sustain: 4, velocity: 0.3 },
+  ] }] };
+  game.play(song, difficulty);
+  const start = game._audioStart;
+  const target = game.chart.notes[0];
+  game.songTime = target.time;
+  game._press(target.lane);
+  check(game.session.hits === 1 && calls.length === 0, `${difficulty}: hit alters the original audio score`);
+  check(game.chart.performance.every((n) => n.judged === undefined), `${difficulty}: judging mutates audio notes`);
+  for (let frame = 0; frame <= 60; frame++) {
+    clock.t = frame / 10;
+    game.update(0.1);
+  }
+  const expected = game.chart.performance.map((n) => ({ midi: n.midi, when: start + n.time, dur: n.sustain, velocity: n.velocity }));
+  check(JSON.stringify(calls) === JSON.stringify(expected), `${difficulty}: full score was not scheduled exactly once`);
+  clock.t = start + 3;
+  game.update(0.1);
+  check(game.state === "playing", `${difficulty}: results interrupt the final sustained note`);
+  game.pause();
+  const scheduled = calls.length;
+  game.update(0.1);
+  check(game.state === "paused" && calls.length === scheduled, `${difficulty}: pause schedules additional notes`);
+  game.resume();
+  clock.t = start + game.chart.duration + 0.1;
+  game.update(0.1);
+  check(game.state === "finished", `${difficulty}: performance never finishes`);
+  calls.length = 0;
+  game.restart();
+  for (let frame = 0; frame <= 80; frame++) {
+    clock.t += 0.1;
+    game.update(0.1);
+  }
+  check(calls.length === game.chart.performance.length, `${difficulty}: restart skips or duplicates audio events`);
+}
+
 for (const song of SONGS) {
+  const source = new MidiPkg.Midi(readFileSync(new URL(`./midi/${song.id}.mid`, import.meta.url)));
+  const sourceNotes = source.tracks.filter((t) => !t.instrument.percussion).flatMap((t) => t.notes);
+  const signature = (n) => JSON.stringify([n.midi, n.time, n.dur ?? n.duration, n.velocity]);
+  const expected = sourceNotes.map(signature).sort();
+  const charts = Object.keys(DIFFICULTIES).map((d) => buildChart(song, d));
+  for (const chart of charts) {
+    check(
+      JSON.stringify(chart.performance.map(signature).sort()) === JSON.stringify(expected),
+      `${song.id} [${chart.difficulty.id}]: audio differs from source MIDI`,
+    );
+    check(
+      chart.duration >= Math.max(...sourceNotes.map((n) => n.time + n.duration)) + 2.2 - 1e-9,
+      `${song.id}: duration cuts off the full performance`,
+    );
+    check(chart.performance.every((n) => n.judged === undefined && n.lane === undefined),
+      `${song.id}: audio notes share mutable judgement/render state`);
+  }
+  check(charts.every((c) => c.duration === charts[0].duration), `${song.id}: difficulty changes song length`);
+  check(charts[0].notes.length < charts[1].notes.length && charts[1].notes.length < charts[2].notes.length,
+    `${song.id}: target counts do not increase with difficulty`);
+
   check(typeof song.id === "string" && song.id.length > 0, `${song.title}: missing id`);
   check(Number.isFinite(song.bpm) && song.bpm > 20 && song.bpm < 260, `${song.title}: bad bpm`);
   check(song.tracks?.length > 0, `${song.title}: no tracks`);
@@ -118,6 +240,13 @@ for (const song of SONGS) {
     const tag = `${song.title} [${difficulty}]`;
 
     check(chart.notes.length > 0, `${tag}: chart is empty`);
+    const chordCounts = new Map();
+    for (const n of chart.notes) {
+      const key = n.time.toFixed(2);
+      chordCounts.set(key, (chordCounts.get(key) ?? 0) + 1);
+    }
+    check(Math.max(...chordCounts.values()) <= chart.difficulty.maxChord,
+      `${tag}: too many simultaneous targets`);
     check(
       chart.laneCount === DIFFICULTIES[difficulty].lanes,
       `${tag}: lane count ${chart.laneCount} != ${DIFFICULTIES[difficulty].lanes}`,

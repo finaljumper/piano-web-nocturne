@@ -245,7 +245,7 @@ export class UI {
 
       const best = this.best[`${song.id}:${this.difficulty}`];
       const rating = ratingLabel(chart.stats.rating);
-      const seconds = Math.round(chart.stats.count / Math.max(0.1, chart.stats.nps));
+      const seconds = Math.round(chart.duration);
 
       const title = document.createElement("h3");
       title.className = "sc-title";

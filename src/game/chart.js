@@ -1,8 +1,9 @@
 /**
  * Turns a song's note data into a playable chart for a given difficulty.
  *
- * Pipeline: tracks -> absolute beats -> seconds -> difficulty filter ->
- * lane assignment -> notes sorted by time.
+ * The full performance is independent of the difficulty's playable targets.
+ * Imported tracks use absolute seconds; the sequential authoring DSL remains
+ * supported for hand-authored songs.
  */
 
 import { parseNoteString } from "./notes.js";
@@ -14,14 +15,12 @@ const PALETTES = {
 };
 
 export const DIFFICULTIES = {
-  // `minGap` is the shortest allowed gap between note onsets. Thinning the
-  // texture evenly (rather than deleting one hand) keeps the tune intact at
-  // every difficulty while giving a real density gradient. The music itself
-  // plays at the same tempo on every difficulty — `approach` is how long a gem
-  // takes to travel the highway, so harder charts scroll in faster.
-  easy: { id: "easy", label: "Easy", lanes: 4, minGap: 0.46, approach: 3.2 },
-  medium: { id: "medium", label: "Medium", lanes: 6, minGap: 0.29, approach: 2.2 },
-  hard: { id: "hard", label: "Hard", lanes: 6, minGap: 0.22, approach: 1.6 },
+  // Only hit-target density, chord size, lanes and approach speed change.
+  // The complete music plays at its source tempo on every difficulty.
+  // `approach` is gem travel time; shorter times make the highway scroll faster.
+  easy: { id: "easy", label: "Easy", lanes: 4, minGap: 0.46, targetFraction: 0.7, maxChord: 1, approach: 3.2 },
+  medium: { id: "medium", label: "Medium", lanes: 6, minGap: 0.29, targetFraction: 0.85, maxChord: 2, approach: 2.2 },
+  hard: { id: "hard", label: "Hard", lanes: 6, minGap: 0.12, targetFraction: 1, maxChord: 6, approach: 1.6 },
 };
 
 /** Hit windows, in seconds either side of the note. */
@@ -33,8 +32,8 @@ export const WINDOWS = {
 
 export const MISS_WINDOW = WINDOWS.good;
 
-/** Expand one author track into `{ midi, beat, durBeats, hand }`. */
-function expandTrack(track) {
+/** Read absolute MIDI events or expand sequential notes at the song's tempo. */
+function expandTrack(track, spb) {
   const raw = typeof track.notes === "function" ? track.notes() : track.notes;
   const parsed = typeof raw === "string" ? parseNoteString(raw) : raw;
 
@@ -44,7 +43,14 @@ function expandTrack(track) {
     const midi = item.midi ?? null;
     const dur = item.dur ?? 1;
     if (midi !== null) {
-      out.push({ midi, beat, durBeats: dur, hand: track.hand ?? "R" });
+      out.push({
+        midi,
+        time: item.time ?? beat * spb,
+        dur: item.time === undefined ? Math.max(0.08, dur * spb) : dur,
+        velocity: item.velocity ?? 0.5,
+        sustain: item.sustain ?? (item.time === undefined ? Math.max(0.08, dur * spb) : dur),
+        hand: track.hand ?? "R",
+      });
     }
     beat += dur;
   }
@@ -57,25 +63,17 @@ function expandTrack(track) {
  */
 export function buildChart(song, difficulty = "medium") {
   const cfg = DIFFICULTIES[difficulty] ?? DIFFICULTIES.medium;
-  // Easy also breathes: a slightly slower tempo gives newer players room,
-  // which thinning alone cannot.
   // The music runs at the song's own tempo on every difficulty; only the gem
   // travel time (`approach`) changes how fast the highway scrolls.
   const spb = 60 / song.bpm;
 
   // --- 1. expand all tracks -------------------------------------------------
-  const all = [];
+  const performance = [];
   for (const track of song.tracks) {
-    for (const n of expandTrack(track)) {
-      all.push({
-        midi: n.midi,
-        hand: n.hand,
-        time: n.beat * spb,
-        dur: Math.max(0.08, n.durBeats * spb),
-      });
-    }
+    performance.push(...expandTrack(track, spb));
   }
-  all.sort((a, b) => a.time - b.time || a.midi - b.midi);
+  performance.sort((a, b) => a.time - b.time || a.midi - b.midi);
+  const all = performance;
 
   // --- 2. difficulty filtering ---------------------------------------------
   const EPS = 1 / 240;
@@ -85,23 +83,30 @@ export function buildChart(song, difficulty = "medium") {
   for (const n of all) {
     const last = onsets.at(-1);
     if (last && Math.abs(n.time - last.time) < EPS) last.notes.push(n);
-    else onsets.push({ time: n.time, notes: [n] });
+    else onsets.push({ time: n.time, notes: [n], index: onsets.length });
   }
 
-  // Drop onsets that crowd the previous kept onset. Even sub-sampling keeps the
-  // rhythm legible instead of punching holes in the melody.
-  const kept = [];
-  let lastKept = -Infinity;
-  for (const onset of onsets) {
-    if (onset.time - lastKept < cfg.minGap - EPS) continue;
-    lastKept = onset.time;
-    kept.push(...onset.notes);
+  // Nest the onset sets so an easier chart never asks for more notes. Dense
+  // passages can still be simplified on Hard without changing their audio.
+  let playableOnsets = onsets;
+  for (const level of [DIFFICULTIES.hard, DIFFICULTIES.medium, DIFFICULTIES.easy]) {
+    let lastKept = -Infinity;
+    playableOnsets = playableOnsets.filter((onset) => {
+      if (onset.time - lastKept < level.minGap - EPS) return false;
+      lastKept = onset.notes.at(-1).time;
+      return true;
+    });
+    // Leave some notes as accompaniment even when a slow piece already fits
+    // the gap limit. This keeps Easy and Medium lighter for sparse songs too.
+    playableOnsets = playableOnsets.filter((_, i) =>
+      Math.floor(i * level.targetFraction) !== Math.floor((i - 1) * level.targetFraction)
+    );
+    if (level === cfg) break;
   }
-  kept.sort((a, b) => a.time - b.time || a.midi - b.midi);
 
   // --- 3. lane assignment ---------------------------------------------------
   const laneCount = cfg.lanes;
-  const hands = new Set(kept.map((n) => n.hand));
+  const hands = new Set(all.map((n) => n.hand));
   const bothHands = hands.has("L") && hands.has("R");
   const split = bothHands ? Math.max(1, Math.floor(laneCount / 2)) : laneCount;
 
@@ -111,23 +116,42 @@ export function buildChart(song, difficulty = "medium") {
   const distinctByHand = {};
   for (const hand of hands) {
     distinctByHand[hand] = [
-      ...new Set(kept.filter((n) => n.hand === hand).map((n) => n.midi)),
+      ...new Set(all.filter((n) => n.hand === hand).map((n) => n.midi)),
     ].sort((a, b) => a - b);
   }
 
-  for (const n of kept) {
+  const laneFor = (n) => {
     const blockStart = bothHands && n.hand === "L" ? 0 : bothHands ? split : 0;
     const blockSize = bothHands ? split : laneCount;
     const pitches = distinctByHand[n.hand];
     const idx = pitches.indexOf(n.midi);
     const t = pitches.length <= 1 ? 0.5 : idx / (pitches.length - 1);
-    n.lane = blockStart + clampInt(Math.round(t * (blockSize - 1)), 0, blockSize - 1);
+    return blockStart + clampInt(Math.round(t * (blockSize - 1)), 0, blockSize - 1);
+  };
+
+  const kept = [];
+  for (const onset of playableOnsets) {
+    // Alternate bass/melody priority and fill outward-in: easier chords are
+    // subsets of harder chords. Multiple voices sharing a lane are one target.
+    const used = new Set();
+    let lo = 0;
+    let hi = onset.notes.length - 1;
+    let pick = onset.index;
+    while (lo <= hi && used.size < cfg.maxChord) {
+      const note = onset.notes[pick++ % 2 ? lo++ : hi--];
+      const lane = laneFor(note);
+      if (used.has(lane)) continue;
+      used.add(lane);
+      kept.push({ ...note, lane });
+    }
   }
 
   // --- 4. finalise ----------------------------------------------------------
   kept.sort((a, b) => a.time - b.time || a.lane - b.lane);
 
-  const endTime = kept.length ? kept[kept.length - 1].time + 2.2 : 5;
+  // Filtered final targets must not end the piece or cut off sustained notes.
+  const scoreEnd = all.length ? Math.max(...all.map((n) => n.time + n.sustain)) : 2.8;
+  const endTime = scoreEnd + 2.2;
 
   for (let i = 0; i < kept.length; i++) {
     kept[i].index = i;
@@ -140,6 +164,7 @@ export function buildChart(song, difficulty = "medium") {
     laneCount,
     palette: PALETTES[laneCount] ?? PALETTES[6],
     notes: kept,
+    performance,
     duration: endTime,
     stats: chartStats(kept),
   };

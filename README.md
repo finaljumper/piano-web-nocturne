@@ -9,6 +9,12 @@ soundfonts and no network requests: each note is built additively from partials
 with per-partial inharmonicity and pitch-dependent decay, fed through a
 procedural convolution reverb.
 
+Twelve catalog entries are generated from checked-in Mutopia sheet-music
+notation, with all written repeats and simultaneous parts. The complete four-part
+Canon replaces the former single melody. Orchestral/choral parts are rendered
+on piano, so instrumentation differs from the original ensemble. Five existing
+third-party MIDI transcriptions still need independent score verification.
+
 ---
 
 ## Running it
@@ -50,29 +56,38 @@ at the end.
 The music itself plays at the same tempo on every difficulty — only the
 scroll speed and note density change.
 
-| | Lanes | Note spacing | Gem travel |
-| --- | --- | --- | --- |
-| Easy | 4 | ≥ 460 ms | 3.2 s (gentle) |
-| Medium | 6 | ≥ 290 ms | 2.2 s |
-| Hard | 6 | ≥ 220 ms | 1.6 s (fast) |
+| | Lanes | Target spacing | Max targets per chord | Gem travel |
+| --- | --- | --- | --- | --- |
+| Easy | 4 | ≥ 460 ms | 1 | 3.2 s (gentle) |
+| Medium | 6 | ≥ 290 ms | 2 | 2.2 s |
+| Hard | 6 | ≥ 120 ms | 6 | 1.6 s (fast) |
 
-Thinning is applied evenly across note onsets rather than by deleting a hand, so
-the tune stays recognisable at every difficulty. Lane assignment ranks the
+**The complete song plays on every difficulty**, including notes without a
+falling block. Playback preserves the source MIDI's simultaneous voices, note
+lengths, velocities and tempo changes. Difficulty changes the targets to hit,
+never the music or its tempo. Hits reward you with visual effects and scoring
+without adding extra piano notes.
+
+Easy selects fewer onsets and single-note targets; Medium adds more onsets and
+two-note chords; Hard follows the score most closely, while still simplifying
+very dense passages and combining voices that share a lane. Additional even
+thinning keeps Easy and Medium lighter even in slow, sparse pieces.
+Lane assignment ranks the
 *distinct pitches* of each hand and spreads them across its half of the highway:
 monotonic in pitch (a scale run reads as a lane run), but no lane swallows the
 melody.
 
 ## Repertoire
 
-Seventeen public-domain pieces, played full length. Note data is converted
-from public-domain MIDI sources by `tools/import-midi.mjs` (sources fetched by
-`tools/fetch-midi.mjs`):
+Seventeen classical pieces and arrangements. Twelve have checked-in notation
+sources and a reproducible score-to-MIDI pipeline in `tools/build-score-midi.mjs`.
+`tools/import-midi.mjs` preserves the complete MIDI performance.
 
 | Piece | Composer | Era |
 | --- | --- | --- |
 | Für Elise | Beethoven | Classical |
 | Moonlight Sonata (I) | Beethoven | Classical |
-| Ode to Joy | Beethoven | Classical |
+| Ode to Joy (theme arrangement) | Beethoven | Classical |
 | Pathétique: Adagio cantabile | Beethoven | Classical |
 | Rondo alla Turca | Mozart | Classical |
 | Lacrimosa (Requiem) | Mozart | Classical |
@@ -88,8 +103,31 @@ from public-domain MIDI sources by `tools/import-midi.mjs` (sources fetched by
 | Prelude in C | J.S. Bach | Baroque |
 | Gymnopédie No. 1 | Satie | Neo-classical |
 
-The conversions stay faithful to the source; per-difficulty onset thinning in
-`chart.js` is what keeps the texture readable on a lane highway.
+The conversions keep every pitched MIDI note at its original time; percussion
+tracks are excluded from this piano arrangement. Per-difficulty onset thinning
+in `chart.js` affects only the lane highway, while its separate `performance`
+score supplies full audio playback. MIDI damper-pedal events extend audible
+holds without changing the written rhythm or target timing. Song length includes
+the final held note. No extra piano notes are added when hitting a target.
+
+To regenerate note data from its checked-in MIDI:
+
+```bash
+node tools/import-midi.mjs tools/midi/fur-elise.mid fur-elise
+```
+
+To rebuild MIDI from the actual notation (LilyPond 2.24.x and `convert-ly` required):
+
+```bash
+node tools/build-score-midi.mjs
+node tools/music-credits.mjs
+```
+
+See [notation sources](tools/scores/README.md) for editions, repeat handling and
+tempo choices. The [remaining transcription audit](tools/transcription-audit/README.md)
+documents two corrected Lacrimosa alto notes, its complete choir comparison,
+Ode to Joy's checked opening, and the full-score comparisons still pending.
+Ordinary app builds use the checked-in data and need no notation compiler or music download.
 
 ## Architecture
 
@@ -136,7 +174,7 @@ headless Chromium, plays charts with frame-accurate synthetic key presses, and
 fails on any console error.
 
 ```bash
-npm run validate     # chart invariants (no browser): 245 checks
+npm run validate     # chart invariants, MIDI fidelity and audio scheduling
 npm run verify       # build, then drive the game end to end in Chromium
 npm run audio:level  # offline render of the synth: peak / RMS / clipping
 ```
@@ -162,4 +200,9 @@ node tools/shot.mjs tools/shots/labels.png fur-elise hard
 
 ## Licence
 
-Game code is provided as-is. All compositions are in the public domain.
+Game code is provided as-is. Composition rights, MIDI transcription rights and
+recording rights must be considered separately.
+
+Notation credits and individual transcription licenses are in
+[Music credits](public/music-credits.html), also accessible from Settings.
+Adapted MIDI and note data retain the respective source licenses.

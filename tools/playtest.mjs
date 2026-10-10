@@ -32,14 +32,17 @@ for (const song of SONGS) {
   }
 }
 
-// The music must be identical on every difficulty: the tempo (seconds per
-// beat) never changes — only note density and gem travel time differ. All
-// difficulties therefore span the same piece length.
+// Difficulty changes the targets, never the music or its running time.
 for (const song of SONGS) {
-  const durations = Object.keys(DIFFICULTIES).map((d) => buildChart(song, d).duration);
-  const spread = Math.max(...durations) - Math.min(...durations);
-  if (spread > 0.5) problems.push(`${song.id}: chart durations drift ${spread.toFixed(2)}s across difficulties`);
+  const charts = ["easy", "medium", "hard"].map((d) => buildChart(song, d));
+  if (!charts.every((c) => c.duration === charts[0].duration)) {
+    problems.push(`${song.id}: difficulty changes song duration`);
+  }
+  if (!(charts[0].notes.length <= charts[1].notes.length && charts[1].notes.length <= charts[2].notes.length)) {
+    problems.push(`${song.id}: difficulty density is inverted`);
+  }
 }
+
 // Approach must shrink as difficulty rises (faster gem travel = harder read).
 if (!(DIFFICULTIES.easy.approach > DIFFICULTIES.medium.approach &&
       DIFFICULTIES.medium.approach > DIFFICULTIES.hard.approach)) {

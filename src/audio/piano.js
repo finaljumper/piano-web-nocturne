@@ -89,7 +89,7 @@ export class Piano {
     // Piano decays: bass strings ring for seconds, treble dies quickly.
     const tau0 = 5.4 * Math.exp(-(midi - 21) / 33) + 0.55;
     const attack = 0.0025 + 0.006 * Math.exp(-(midi - 36) / 22);
-    const release = clamp(duration, 0.05, 12);
+    const release = Math.max(duration, 0.05);
     const dampStart = when + release + 0.02;
     const endTime = dampStart + 0.5;
 
