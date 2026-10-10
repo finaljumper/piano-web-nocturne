@@ -20,7 +20,7 @@ for (const song of SONGS) {
     const tag = `${song.id} [${id}]`;
     if (chart.laneCount !== cfg.lanes) problems.push(`${tag}: lanes ${chart.laneCount} != ${cfg.lanes}`);
     if (!chart.notes.length) problems.push(`${tag}: no notes`);
-    const bpm = song.bpm * (cfg.tempoScale ?? 1);
+    const bpm = song.bpm;
     if (!(bpm > 20 && bpm < 260)) problems.push(`${tag}: effective bpm ${bpm} out of range`);
     const minutes = chart.duration / 60;
     if (minutes < 0.5 || minutes > 7) problems.push(`${tag}: duration ${minutes.toFixed(1)}min out of range`);
@@ -33,11 +33,14 @@ for (const song of SONGS) {
   }
 }
 
-// Tempo gradient: hard must be faster than medium, easy slower than medium.
+// Difficulty changes the targets, never the music or its running time.
 for (const song of SONGS) {
-  const eff = (d) => song.bpm * (DIFFICULTIES[d].tempoScale ?? 1);
-  if (!(eff("easy") < eff("medium") && eff("medium") < eff("hard"))) {
-    problems.push(`${song.id}: tempo gradient not easy < medium < hard`);
+  const charts = ["easy", "medium", "hard"].map((d) => buildChart(song, d));
+  if (!charts.every((c) => c.duration === charts[0].duration)) {
+    problems.push(`${song.id}: difficulty changes song duration`);
+  }
+  if (!(charts[0].notes.length <= charts[1].notes.length && charts[1].notes.length <= charts[2].notes.length)) {
+    problems.push(`${song.id}: difficulty density is inverted`);
   }
 }
 

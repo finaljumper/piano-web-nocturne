@@ -1,0 +1,112 @@
+{
+  "fur-elise": {
+    "entry": "fur_Elise_WoO59.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/BeethovenLv/WoO59/fur_Elise_WoO59/fur_Elise_WoO59.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Breitkopf & Härtel, 1888",
+    "typesetter": "Stelios Samelis",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "canon-in-d": {
+    "entry": "canon_per_3_violini_e_basso.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/PachelbelJ/Canon_per_3_Violini_e_Basso/Canon_per_3_Violini_e_Basso-lys/canon_per_3_violini_e_basso.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "IMSLP",
+    "typesetter": "Michael Fischer v. Mollard",
+    "license": "Creative Commons Attribution 4.0",
+    "fallbackBpm": 60
+  },
+  "gymnopedie-1": {
+    "entry": "gymnopedie_1.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/SatieE/gymnopedie_1/gymnopedie_1.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Dover Edition",
+    "typesetter": "Evin Robertson",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "prelude-in-c": {
+    "entry": "wtk1-prelude1.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/BachJS/BWV846/wtk1-prelude1/wtk1-prelude1.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Unknown",
+    "typesetter": "Tobias Erbsland",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "minuet-in-g": {
+    "entry": "anna-magdalena-04.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/BachJS/BWVAnh114/anna-magdalena-04/anna-magdalena-04.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Bach-Gesellschaft",
+    "typesetter": "Allen Garvin",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "rondo-alla-turca": {
+    "entry": "KV331_3_RondoAllaTurca.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/MozartWA/KV331/KV331_3_RondoAllaTurca/KV331_3_RondoAllaTurca-lys/KV331_3_RondoAllaTurca.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "IMSLP",
+    "typesetter": "Rune Zedeler and Chris Sawer",
+    "license": "Public Domain",
+    "fallbackBpm": 120,
+    "tempoNote": "Allegretto has no numeric metronome mark in this edition; use quarter = 120 for playback."
+  },
+  "pathetique-2": {
+    "entry": "pathetique-2.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/BeethovenLv/O13/pathetique-2/pathetique-2.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Berners, 1908 (edited by A. Winterberger); Peters, 1910",
+    "typesetter": "Chris Sawer",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "nocturne-op9-no2": {
+    "entry": "chopin_nocturne_op9_n2.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/ChopinFF/O9/chopin_nocturne_op9_n2/chopin_nocturne_op9_n2.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "G. Schirmer, New York, 1881",
+    "typesetter": "Renato Biolcati Rinaldi",
+    "license": "Creative Commons Attribution-ShareAlike 3.0",
+    "fallbackBpm": 60
+  },
+  "prelude-op28-no4": {
+    "entry": "Chop-28-4.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/ChopinFF/O28/Chop-28-4/Chop-28-4.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Peters, 1879",
+    "typesetter": "Magnus Lewis-Smith",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "fantaisie-impromptu": {
+    "entry": "chopin_fantaisie-impromptu.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/ChopinFF/O66/chopin_fantaisie-impromptu/chopin_fantaisie-impromptu.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Herrmann Scholtz (1845-1918)",
+    "typesetter": "Guy D. Lederfein",
+    "license": "Public Domain",
+    "fallbackBpm": 60
+  },
+  "prelude-op3-no2": {
+    "entry": "rach-prelude-op3-no2.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/RachmaninoffS/O3/rach-prelude-op3-no2/rach-prelude-op3-no2.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Bosworth & Co. 1896; Universal Edition 1910",
+    "typesetter": "Petro Kostandy",
+    "license": "Creative Commons Attribution-ShareAlike 4.0",
+    "fallbackBpm": 60
+  },
+  "moonlight": {
+    "entry": "moonlight1-a4.ly",
+    "source": "https://github.com/MutopiaProject/MutopiaProject/blob/2144afd6f52d56c5b6995b8b589ef1268b3139f0/ftp/BeethovenLv/O27/moonlight/moonlight-lys/moonlight1-a4.ly",
+    "revision": "2144afd6f52d56c5b6995b8b589ef1268b3139f0",
+    "edition": "Berners, 1908 (edited by A. Winterberger)",
+    "typesetter": "Stewart Holmes",
+    "license": "Creative Commons Attribution-ShareAlike 2.5",
+    "fallbackBpm": 54,
+    "tempoNote": "Enable the score source’s commented quarter = 54 MIDI tempo."
+  }
+}
